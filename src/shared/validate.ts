@@ -12,7 +12,7 @@ import {
   type Player,
   type Step,
 } from "./schema";
-import { actionEnd } from "./engine";
+import { actionEnd, ballInStep, buildTimeline, playerPositionInStep, stepDuration } from "./engine";
 
 export const MIN_ACTION_SECONDS = 0.2;
 export const MAX_STEP_SECONDS = 30;
@@ -191,6 +191,41 @@ export function findIssues(activity: Activity): string[] {
         holder = e.targetId ?? null;
         // A shot with no rebounder leaves the ball at the rim; nobody can use it after that.
         if (holder === null) ballExists = false;
+      }
+    }
+  });
+  return [...issues, ...findTravels(activity)];
+}
+
+/** Feet a player may move with the ball without dribbling (gather steps and pivots). */
+export const MAX_FEET_WITHOUT_DRIBBLE = 6;
+
+/**
+ * Traveling: a player holding the ball who runs (cut / move / screen) more than
+ * a couple of steps without dribbling. Measured on the animation itself, so it
+ * catches a catch-on-the-run that keeps going as well as an explicit run.
+ */
+export function findTravels(activity: Activity): string[] {
+  const issues: string[] = [];
+  const label = (id: string) => activity.players.find((p) => p.id === id)?.label ?? id;
+  const tl = buildTimeline(activity);
+  activity.steps.forEach((step, k) => {
+    const state = tl.states[k];
+    const duration = stepDuration(step.duration, step.actions);
+    const runners = new Set(step.actions.filter((a) => a.to && a.type !== "dribble").map((a) => a.playerId));
+    for (const id of runners) {
+      const dribbling = step.actions.filter((a) => a.type === "dribble" && a.playerId === id);
+      let feet = 0;
+      let prev: { x: number; y: number } | null = null;
+      for (let t = 0; t <= duration + 1e-9; t += 0.05) {
+        const pos = playerPositionInStep(state, step.actions, id, t);
+        const holding = ballInStep(state, step.actions, t)?.holderId === id;
+        const isDribbling = dribbling.some((d) => t >= d.delay && t <= actionEnd(d));
+        if (prev && holding && !isDribbling) feet += Math.hypot(pos.x - prev.x, pos.y - prev.y);
+        prev = pos;
+      }
+      if (feet > MAX_FEET_WITHOUT_DRIBBLE) {
+        issues.push(`${label(id)} moves about ${Math.round(feet)} ft holding the ball in step ${k + 1} ("${step.label}") without dribbling (traveling).`);
       }
     }
   });

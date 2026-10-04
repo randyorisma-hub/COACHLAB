@@ -8,12 +8,13 @@ import {
   type Frame,
 } from "../src/shared/engine";
 import { HOOP, type Activity } from "../src/shared/schema";
-import { TEMPLATES } from "../src/server/demoLibrary";
+import { LIBRARY } from "../src/shared/library";
 import { prepareActivity } from "../src/shared/pipeline";
 import { act, makeActivity } from "./helpers";
 
 const ctx = { playerCount: 12, level: "8th grade", minutes: 12 };
-const demoActivities: Activity[] = TEMPLATES.map((t) => prepareActivity(t.build(ctx), "demo").activity);
+const rawActivities: Activity[] = LIBRARY.map((e) => e.build({ ...ctx, playerCount: Math.max(ctx.playerCount, e.minPlayers) }));
+const demoActivities: Activity[] = rawActivities.map((a) => prepareActivity(a, "library").activity);
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
 const pos = (f: Frame, id: string) => f.players.find((p) => p.id === id)!;
@@ -120,7 +121,7 @@ describe("animation engine: basics", () => {
   });
 });
 
-describe("animation consistency across every demo activity", () => {
+describe("animation consistency across every library activity", () => {
   for (const activity of demoActivities) {
     describe(activity.title, () => {
       const tl = buildTimeline(activity);
@@ -180,7 +181,8 @@ describe("animation consistency across every demo activity", () => {
       });
 
       it("has consistent ball possession (no issues)", () => {
-        expect(prepareActivity(activity, "demo").warnings).toEqual([]);
+        // Checked on the activity exactly as written: no automatic fixes, no possession or traveling issues.
+        expect(prepareActivity(rawActivities[demoActivities.indexOf(activity)], "library").warnings).toEqual([]);
       });
     });
   }

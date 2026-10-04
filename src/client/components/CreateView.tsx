@@ -137,6 +137,9 @@ export function CreateView({
               <button type="button" className="btn btn--ghost" onClick={onBlank}>
                 Start from a blank court
               </button>
+              <a className="btn btn--ghost" href="#/library">
+                Browse the drill library
+              </a>
             </div>
             {busy && <p className="hint">AI design can take up to a minute.</p>}
             {error && <p className="error">{error}</p>}

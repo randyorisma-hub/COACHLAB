@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { ForbiddenError, NotFoundError, PlaybookStore } from "../src/server/store";
 import { buildTimeline, frameAt } from "../src/shared/engine";
-import { TEMPLATES } from "../src/server/demoLibrary";
+import { LIBRARY } from "../src/shared/library";
 import { prepareActivity } from "../src/shared/pipeline";
 import { makeActivity } from "./helpers";
 
@@ -21,7 +21,7 @@ afterEach(async () => {
 
 describe("PlaybookStore saving", () => {
   it("persists a saved activity to disk and reloads it identically in a new process", async () => {
-    const activity = prepareActivity(TEMPLATES[0].build({ playerCount: 12, level: "8th grade", minutes: 10 }), "demo").activity;
+    const activity = prepareActivity(LIBRARY[0].build({ playerCount: 12, level: "8th grade", minutes: 10 }), "demo").activity;
     const store = new PlaybookStore(file);
     const { playbook, editToken } = await store.create("8th Grade Boys", "Eagles");
     const saved = await store.saveActivity(playbook.id, editToken, activity, "demo");

@@ -1,84 +1,16 @@
-/**
- * DEMO CONTENT. Hand-written sample activities used when no AI credentials
- * are configured (or DEMO_MODE=1). Every result produced from this file is
- * labeled origin "demo" and shown with a "Demo" badge in the app — it is not
- * AI-generated and does not respond to the full meaning of the coach's prompt.
- */
-import type { Action, Activity, Player, Step } from "../shared/schema";
-import { ORIGINAL_ATTRIBUTION } from "../shared/attribution";
+/** The original seven sample activities, now part of the library. */
+import type { Action, Player } from "../schema";
+import { base, line, move, P, pass, shot, split, step, type BuildContext, type LibraryEntry } from "./dsl";
 
-export interface DemoContext {
-  playerCount: number;
-  level: string;
-  minutes: number;
-}
-
-interface Template {
-  key: string;
-  tags: string[];
-  build: (ctx: DemoContext) => Activity;
-}
-
-let seq = 0;
-const aid = () => `a${++seq}`;
-
-const P = (id: string, label: string, role: Player["role"], x: number, y: number, name: string | null = null): Player => ({
-  id, label, role, x, y, name,
-});
-const move = (
-  type: "cut" | "dribble" | "screen" | "move",
-  playerId: string,
-  x: number,
-  y: number,
-  delay: number,
-  duration: number,
-  opts: { via?: [number, number]; targetId?: string } = {},
-): Action => ({
-  id: aid(),
-  type,
-  playerId,
-  to: { x, y },
-  via: opts.via ? { x: opts.via[0], y: opts.via[1] } : null,
-  targetId: opts.targetId ?? null,
-  delay,
-  duration,
-});
-const pass = (from: string, to: string, delay: number, duration = 0.7): Action => ({
-  id: aid(), type: "pass", playerId: from, to: null, via: null, targetId: to, delay, duration,
-});
-const shot = (from: string, rebounder: string | null, delay: number, duration = 1): Action => ({
-  id: aid(), type: "shot", playerId: from, to: null, via: null, targetId: rebounder, delay, duration,
-});
-const step = (label: string, note: string, duration: number, actions: Action[]): Step => ({
-  id: `s${++seq}`, label, note, duration, actions,
-});
-
-/** Waiting players in a line, starting at index `from` (1-based labels). */
-function line(prefix: string, role: Player["role"], from: number, count: number, x: number, y: number, dx: number, dy: number, lineName: string): Player[] {
-  const out: Player[] = [];
-  for (let i = 0; i < count; i++) {
-    const n = from + i;
-    out.push(P(`${prefix}${n}`, `${prefix}${n}`, role, x + dx * i, y + dy * i, `${lineName} #${n}`));
-  }
-  return out;
-}
-
-const split = (n: number, parts: number) => {
-  const base = Math.floor(n / parts);
-  return Array.from({ length: parts }, (_, i) => base + (i < n % parts ? 1 : 0));
-};
-
-const base = (ctx: DemoContext) => ({
-  level: ctx.level,
-  playerCount: ctx.playerCount,
-  durationMinutes: Math.min(ctx.minutes, 15),
-  attribution: ORIGINAL_ATTRIBUTION,
-});
-
-const giveAndGo: Template = {
+const giveAndGo: LibraryEntry = {
+  category: "passing",
+  ages: [8, 14],
+  minPlayers: 2,
+  defaultPlayers: 12,
+  references: [{ title: "Basic partner passing (Breakthrough Basketball)", url: "https://www.breakthroughbasketball.com/drills/pairpassing" }],
   key: "give-and-go",
   tags: ["pass", "passing", "cut", "cutting", "give", "go", "layup", "finish", "basic", "fundamental", "beginner", "youth"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const [na, nb] = split(Math.max(ctx.playerCount, 2), 2);
     const A = line("A", "offense", 1, na, 8, 24, 0, 2.5, "Wing line");
     const B = line("B", "offense", 1, nb, 25, 30, 0, 2.5, "Top line");
@@ -135,10 +67,15 @@ const giveAndGo: Template = {
   },
 };
 
-const screenAway: Template = {
+const screenAway: LibraryEntry = {
+  category: "team-offense",
+  ages: [11, 18],
+  minPlayers: 5,
+  defaultPlayers: 10,
+  references: [{ title: "Shooting off cuts & screens (Breakthrough Basketball)", url: "https://www.breakthroughbasketball.com/drills/game-like-shooting" }],
   key: "screen-away",
   tags: ["screen", "screens", "motion", "offense", "play", "cut", "cutting", "curl", "pass", "passing", "spacing", "5", "five"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const extras = Math.max(ctx.playerCount - 5, 0);
     const subs = line("S", "neutral", 1, Math.min(extras, 10), 2, 46, 4, 0, "Next group");
     return {
@@ -195,14 +132,19 @@ const screenAway: Template = {
   },
 };
 
-const weave: Template = {
+const weave: LibraryEntry = {
+  category: "transition",
+  ages: [10, 18],
+  minPlayers: 3,
+  defaultPlayers: 9,
+  references: [],
   key: "three-man-weave",
   tags: ["weave", "pass", "passing", "transition", "conditioning", "full", "running", "cut", "cutting", "layup", "warmup"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const [nl, nm, nr] = split(Math.max(ctx.playerCount, 3), 3);
-    const L = line("L", "offense", 1, nl, 10, 88, 0, 2, "Left lane");
-    const M = line("M", "offense", 1, nm, 25, 88, 0, 2, "Middle lane");
-    const R = line("R", "offense", 1, nr, 40, 88, 0, 2, "Right lane");
+    const L = line("L", "offense", 1, nl, 10, 88, 0, 2, "Left lane", 94);
+    const M = line("M", "offense", 1, nm, 25, 88, 0, 2, "Middle lane", 94);
+    const R = line("R", "offense", 1, nr, 40, 88, 0, 2, "Right lane", 94);
     return {
       ...base(ctx),
       id: "demo-three-man-weave",
@@ -261,10 +203,15 @@ const weave: Template = {
   },
 };
 
-const backdoor: Template = {
+const backdoor: LibraryEntry = {
+  category: "passing",
+  ages: [10, 18],
+  minPlayers: 3,
+  defaultPlayers: 9,
+  references: [],
   key: "backdoor-read",
   tags: ["backdoor", "cut", "cutting", "denial", "read", "pass", "passing", "bounce", "defense", "pressure"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const [nt, nw] = split(Math.max(ctx.playerCount - 1, 2), 2);
     const T = line("T", "offense", 1, nt, 25, 28, 0, 2.5, "Top line");
     const W = line("W", "offense", 1, nw, 44, 24, 0, 2.5, "Wing line");
@@ -309,17 +256,22 @@ const backdoor: Template = {
           ...(T[1] ? [pass("X", "T2", 0.2, 0.8)] : []),
           move("move", "T1", 46, Math.min(W[W.length - 1].y + 2.5, 46), 0, 1.8),
           move("move", "W1", 38, 19, 0.6, 1.4),
-          move("move", "X", 23, Math.min(T[T.length - 1].y + 2.5, 46), 1, 1.4),
+          move(T[1] ? "move" : "dribble", "X", 23, Math.min(T[T.length - 1].y + 2.5, 46), 1, 1.4),
         ]),
       ],
     };
   },
 };
 
-const pickAndRoll: Template = {
+const pickAndRoll: LibraryEntry = {
+  category: "team-offense",
+  ages: [12, 18],
+  minPlayers: 2,
+  defaultPlayers: 8,
+  references: [],
   key: "pick-and-roll",
   tags: ["pick", "roll", "screen", "screens", "ball", "handling", "dribble", "guard", "big", "post", "read", "play"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const [ng, nb] = split(Math.max(ctx.playerCount, 2), 2);
     const G = line("G", "offense", 1, ng, 25, 30, 0, 2.5, "Guard line");
     const B = line("B", "offense", 1, nb, 33, 21, 2.5, 2.5, "Screener line");
@@ -363,10 +315,15 @@ const pickAndRoll: Template = {
   },
 };
 
-const shell: Template = {
+const shell: LibraryEntry = {
+  category: "defense",
+  ages: [11, 18],
+  minPlayers: 8,
+  defaultPlayers: 8,
+  references: [{ title: "Defensive shell drill (Breakthrough Basketball)", url: "https://www.breakthroughbasketball.com/defense/shell-drill-sucks" }],
   key: "shell-defense",
   tags: ["defense", "defensive", "shell", "help", "closeout", "rotation", "rotations", "positioning", "team"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const extras = Math.max(ctx.playerCount - 8, 0);
     const subs = line("S", "neutral", 1, Math.min(extras, 10), 2, 46, 4, 0, "Next group");
     return {
@@ -429,10 +386,15 @@ const shell: Template = {
   },
 };
 
-const partnerPassing: Template = {
+const partnerPassing: LibraryEntry = {
+  category: "warmup",
+  ages: [7, 14],
+  minPlayers: 2,
+  defaultPlayers: 10,
+  references: [{ title: "Basic partner passing drill (Breakthrough Basketball)", url: "https://www.breakthroughbasketball.com/drills/pairpassing" }],
   key: "partner-passing",
   tags: ["pass", "passing", "warmup", "warm", "chest", "bounce", "beginner", "youth", "fundamental", "catching"],
-  build(ctx) {
+  build(ctx: BuildContext) {
     const pairs = Math.max(1, Math.min(Math.floor(ctx.playerCount / 2), 8));
     const players: Player[] = [];
     const actions1: Action[] = [];
@@ -473,16 +435,4 @@ const partnerPassing: Template = {
   },
 };
 
-export const TEMPLATES: Template[] = [giveAndGo, screenAway, weave, backdoor, pickAndRoll, shell, partnerPassing];
-
-/** Pick the three demo templates whose tags best match the prompt. */
-export function pickDemoTemplates(prompt: string): Template[] {
-  const words = new Set(prompt.toLowerCase().match(/[a-z0-9]+/g) ?? []);
-  const scored = TEMPLATES.map((t, i) => ({
-    t,
-    i,
-    score: t.tags.reduce((s, tag) => s + (words.has(tag) || [...words].some((w) => w.startsWith(tag)) ? 1 : 0), 0),
-  }));
-  scored.sort((a, b) => b.score - a.score || a.i - b.i);
-  return scored.slice(0, 3).map((s) => s.t);
-}
+export const CLASSICS: LibraryEntry[] = [giveAndGo, screenAway, weave, backdoor, pickAndRoll, shell, partnerPassing];

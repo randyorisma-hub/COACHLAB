@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { buildTimeline, frameAt } from "../../shared/engine";
 import type { Activity, Origin } from "../../shared/schema";
 import { usePlayback } from "../usePlayback";
@@ -7,8 +7,8 @@ import { DetailsPanel } from "./DetailsPanel";
 import { OriginBadge } from "./Badges";
 import { PlaybackBar } from "./PlaybackBar";
 
-/** Read-only animated view used by shared links. */
-export function ActivityViewer({ activity, origin }: { activity: Activity; origin: Origin }) {
+/** Read-only animated view used by shared links and the library. */
+export function ActivityViewer({ activity, origin, aside }: { activity: Activity; origin: Origin; aside?: ReactNode }) {
   const timeline = useMemo(() => buildTimeline(activity), [activity]);
   const pb = usePlayback(timeline);
   const frame = frameAt(timeline, pb.time);
@@ -26,6 +26,7 @@ export function ActivityViewer({ activity, origin }: { activity: Activity; origi
         <Legend />
       </div>
       <div className="side">
+        {aside}
         <DetailsPanel activity={activity} readOnly />
       </div>
     </div>

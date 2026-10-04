@@ -21,7 +21,7 @@ export const SYSTEM_PROMPT = `You are the activity designer inside Driven Play L
   - screen: the screener moves to "to" and sets a screen there; targetId is the teammate being freed (or null).
   - move: any other repositioning (jogging to a line, a defender sliding, rotating spots).
   - shot: playerId shoots; targetId is the rebounder who ends up with the ball, or null if the ball is dead.
-- Ball possession must be consistent: set ballStart, then the ball only changes hands through passes and shots-with-rebounder. A player never moves two paths at once; sequence them with delay.
+- Ball possession must be consistent: set ballStart, then the ball only changes hands through passes and shots-with-rebounder. A player never moves two paths at once; sequence them with delay. A player holding the ball moves only by dribbling (a pivot or one gather step is fine); a player who catches on the run must stop, pass or dribble.
 - Typical timings: pass 0.5-0.9 s, cut 0.8-1.6 s, dribble 0.8-1.5 s, screen 1.0-1.4 s, shot 0.8-1.2 s.
 - Animate one full repetition plus, when useful, the rotation that sets up the next repetition.
 

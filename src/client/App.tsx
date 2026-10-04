@@ -7,12 +7,16 @@ import { CreateView, initialCreateState, type CreateState } from "./components/C
 import { PlaybooksView, PlaybookView } from "./components/PlaybooksView";
 import { ShareView } from "./components/ShareView";
 import { DemoBanner } from "./components/Badges";
+import { initialLibraryFilters, LibraryDetail, LibraryView, type LibraryFiltersState } from "./components/LibraryView";
+import { newId } from "../shared/validate";
 
 type Route =
   | { name: "create" }
   | { name: "edit" }
   | { name: "playbooks" }
   | { name: "playbook"; id: string }
+  | { name: "library" }
+  | { name: "libraryEntry"; key: string }
   | { name: "share"; shareId: string; savedId?: string };
 
 function parseRoute(hash: string): Route {
@@ -24,6 +28,8 @@ function parseRoute(hash: string): Route {
       return { name: "playbooks" };
     case "playbook":
       return parts[1] ? { name: "playbook", id: parts[1] } : { name: "playbooks" };
+    case "library":
+      return parts[1] ? { name: "libraryEntry", key: parts[1] } : { name: "library" };
     case "share":
       return parts[1] ? { name: "share", shareId: parts[1], savedId: parts[2] } : { name: "create" };
     default:
@@ -41,6 +47,7 @@ export function App() {
   const [owned, setOwned] = useState<OwnedPlaybook[]>(loadOwned);
   const [create, setCreate] = useState<CreateState>(() => sessionGet<CreateState>("dpl.create") ?? initialCreateState);
   const [working, setWorking] = useState<WorkingCopy | null>(() => sessionGet<WorkingCopy>("dpl.working"));
+  const [libraryFilters, setLibraryFilters] = useState<LibraryFiltersState>(() => sessionGet<LibraryFiltersState>("dpl.library") ?? initialLibraryFilters);
 
   useEffect(() => {
     const onHash = () => {
@@ -57,6 +64,7 @@ export function App() {
 
   useEffect(() => sessionSet("dpl.create", create), [create]);
   useEffect(() => sessionSet("dpl.working", working), [working]);
+  useEffect(() => sessionSet("dpl.library", libraryFilters), [libraryFilters]);
   useEffect(() => saveOwned(owned), [owned]);
 
   const createPlaybook = useCallback(async (name: string) => {
@@ -81,6 +89,9 @@ export function App() {
           <nav>
             <a href="#/" className={route.name === "create" ? "active" : ""}>
               Create
+            </a>
+            <a href="#/library" className={route.name.startsWith("library") ? "active" : ""}>
+              Library
             </a>
             <a href="#/edit" className={route.name === "edit" ? "active" : ""} aria-disabled={!working}>
               Editor
@@ -131,6 +142,17 @@ export function App() {
             onDeleted={(id) => {
               setOwned((o) => o.filter((x) => x.id !== id));
               go("#/playbooks");
+            }}
+          />
+        )}
+        {route.name === "library" && <LibraryView filters={libraryFilters} setFilters={setLibraryFilters} />}
+        {route.name === "libraryEntry" && (
+          <LibraryDetail
+            entryKey={route.key}
+            onOpen={(activity) => {
+              // A fresh id, so each copy a coach edits and saves is its own activity.
+              setWorking({ activity: { ...activity, id: newId("act") }, origin: "library" });
+              go("#/edit");
             }}
           />
         )}

@@ -5,6 +5,7 @@ A mobile-friendly basketball coaching platform. A coach describes a drill, play 
 - **Playback:** play, pause, 0.25×–2× speed, step forward and back, scrub, loop.
 - **Editing:** drag players to set starting spots. Drag a player during a step to create a cut, or a dribble for the ball handler. Drag the ◆ handle to change where a path ends, or curve the path. You can also edit action type, player, receiver, start time and duration, and add, reorder or delete steps and players. Undo and redo are available.
 - **Plain-language changes:** for example "Add a passive defender" or "Have 4 screen for 2". The request goes to Claude through the server.
+- **Drill library:** 36 original drills and plays across 12 categories (ball handling to press break), searchable by skill, age and court, each animated, editable and linked to public coaching pages for further reading.
 - **Playbooks:** save activities into team playbooks and share **view-only** links.
 - Every player has a unique on-court label. Passes, dribbles, cuts, screens, moves and shots each have a distinct line style (see the legend under the court).
 
@@ -48,7 +49,7 @@ npm start                   # http://localhost:8787
 
 ### Demo mode
 
-When no key is configured, the server answers `/api/generate` from a small hand-written library of 7 activities (`src/server/demoLibrary.ts`). The library picks the best keyword matches and sizes the lines to the team. Demo mode is clearly labeled:
+When no key is configured, the server answers `/api/generate` by picking three drills from the built-in library (`src/shared/library/`) that best match the request's keywords, age and roster size, and sizes the lines to the team. Demo mode is clearly labeled:
 
 - A banner appears on every page.
 - Each demo activity carries a **DEMO sample** badge, which is also stored with saved activities.
@@ -66,6 +67,7 @@ src/
     validate.ts      normalizeActivity() (safe fixes) + findIssues() (ball-possession logic)
     attribution.ts   guardrail against unverified NBA/college/USA Basketball attribution
     edit.ts          immutable editor operations
+    library/         the drill library: dsl.ts (builders), one file per area, index.ts (search, age matching)
     pipeline.ts      normalize → guardrail → issues, for every activity
   server/
     app.ts           Express routes, security headers, error mapping
@@ -96,6 +98,21 @@ An activity is data, not a video:
 - server-side refusal fallbacks
 
 Refusals, truncation and unparseable output become friendly errors; provider error details are never forwarded to the browser. Every result then goes through `prepareActivity()`, which clamps coordinates to the court, de-duplicates IDs, drops actions that reference missing players, serializes overlapping moves and passes, applies the attribution guardrail and reports ball-possession issues. When an activity has possession issues, the editor shows them and offers a **Fix ball issues** button, which sends them back to Claude as a revision.
+
+### Drill library
+
+`src/shared/library/` holds 36 original activities in 12 categories, each with a suggested age range, minimum and default roster size, search tags and "further reading" links. The write-ups and diagrams are our own, based on common coaching practice. Public coaching pages are linked for reference, and nothing is copied from them.
+
+- **Library page** (`#/library`): search by skill words, filter by category, age and court, watch any drill animate, choose a roster size and open it in the editor.
+- **Roster sizes:** waiting lines wrap into extra columns so any team size from the drill's minimum up to 30 stays on the court.
+- **Adding a drill:** write a `LibraryEntry` with the helpers in `dsl.ts` and add it to its area's array. `tests/library.test.ts` then checks it automatically at 5 roster sizes: no fixes needed, unique labels, consistent possession, no traveling and no program names.
+
+### Rules every activity is checked against
+
+`findIssues()` runs on AI output, editor changes and the library:
+
+- **Possession:** only the player with the ball passes, dribbles or shoots, and a shot without a rebounder ends the ball's use.
+- **Traveling:** a player holding the ball may move about 6 ft without dribbling (a pivot or gather step). Anything more is flagged. This is measured on the animation itself, so a catch on the run that keeps going is caught too.
 
 ### Attribution policy
 
@@ -133,6 +150,7 @@ npm run typecheck # tsc --noEmit
   - share links are view-only and revocable
   - concurrent saves are not lost
   - activities are normalized before storage
+- **Library** (`tests/library.test.ts`): every drill at its minimum, 8, 12, 20 and 30 players; unique keys and ids; every category covered; https links only; no program names; search, filters, age parsing and prompt matching; the traveling check.
 - **Editing** (`tests/edit.test.ts`), **validation and attribution** (`tests/validate.test.ts`), **schemas sent to Claude** (`tests/schema.test.ts`).
 - **AI integration** (`tests/api.test.ts`) uses a fake SDK transport to check the request (model, adaptive thinking, structured output, fallbacks, the coach's prompt), the guardrail, fresh ids, refusal (422) and parse-failure (502) handling, plus rate limiting and security headers.
 

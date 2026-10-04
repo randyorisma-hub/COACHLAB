@@ -95,7 +95,7 @@ export const RevisionSchema = z.object({
   changeSummary: z.string().describe("One or two sentences describing what changed"),
 });
 
-export type Origin = "ai" | "demo" | "manual";
+export type Origin = "ai" | "demo" | "library" | "manual";
 
 /** An activity plus provenance metadata the app (not the model) controls. */
 export interface ActivityEnvelope {
@@ -150,5 +150,5 @@ export const CreatePlaybookSchema = z.object({
 
 export const SaveActivitySchema = z.object({
   activity: ActivitySchema,
-  origin: z.enum(["ai", "demo", "manual"]),
+  origin: z.enum(["ai", "demo", "library", "manual"]),
 });

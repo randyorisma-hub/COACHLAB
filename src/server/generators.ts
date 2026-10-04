@@ -10,7 +10,7 @@ import {
   type ReviseRequest,
 } from "../shared/schema";
 import { generationMessage, revisionMessage, SYSTEM_PROMPT } from "./prompts";
-import { pickDemoTemplates, type DemoContext } from "./demoLibrary";
+import { guessAge, pickForPrompt, type BuildContext } from "../shared/library";
 import { newId } from "../shared/validate";
 
 /** Every generated suggestion gets a fresh id so saving never overwrites another activity. */
@@ -110,12 +110,19 @@ export class DemoGenerator implements PlayGenerator {
   readonly mode = "demo" as const;
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const ctx: DemoContext = {
+    const ctx: BuildContext = {
       playerCount: req.team?.playerCount ?? guessPlayerCount(req.prompt) ?? 10,
       level: req.team?.level || guessLevel(req.prompt) || "Youth / middle school",
       minutes: req.team?.minutes ?? 10,
     };
-    const suggestions = pickDemoTemplates(req.prompt).map((t) => prepareActivity(withFreshId(t.build(ctx)), "demo"));
+    const entries = pickForPrompt(req.prompt, {
+      age: guessAge(`${req.team?.level ?? ""} ${req.prompt}`),
+      players: ctx.playerCount,
+      court: req.team?.court,
+    });
+    const suggestions = entries.map((e) =>
+      prepareActivity(withFreshId(e.build({ ...ctx, playerCount: Math.max(ctx.playerCount, e.minPlayers) })), "demo"),
+    );
     return { mode: "demo", suggestions };
   }
 

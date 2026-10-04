@@ -54,7 +54,10 @@ export function stripProgramSentences(text: string): string {
  * Apply the attribution guardrail to every text field of an activity.
  * Returns the cleaned activity and notes describing what was removed.
  */
-export function enforceAttribution(activity: Activity): { activity: Activity; notes: string[] } {
+export function enforceAttribution(
+  activity: Activity,
+  attribution: string = ORIGINAL_ATTRIBUTION,
+): { activity: Activity; notes: string[] } {
   const a: Activity = structuredClone(activity);
   let removed = 0;
   const clean = (s: string) => {
@@ -79,7 +82,7 @@ export function enforceAttribution(activity: Activity): { activity: Activity; no
     s.label = clean(s.label) || "Step";
     s.note = clean(s.note);
   }
-  a.attribution = ORIGINAL_ATTRIBUTION;
+  a.attribution = attribution;
   const notes = removed
     ? [`Removed ${removed} unverified reference(s) to a pro, college or national-team program.`]
     : [];
