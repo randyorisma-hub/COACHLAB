@@ -10,7 +10,7 @@ import { CATEGORY_LABELS, LIBRARY, ageLabel, buildEntry, guessAge, pickForPrompt
 import { prepareActivity } from "../shared/pipeline";
 import { ActivitySchema, type Activity, type ActivityEnvelope } from "../shared/schema";
 import { newId } from "../shared/validate";
-import { GenerationError, type AiOptions, type MessagesClient } from "./generators";
+import { addUsage, emptyUsage, GenerationError, type AiOptions, type MessagesClient } from "./generators";
 import { SYSTEM_PROMPT } from "./prompts";
 
 export const ChatRequestSchema = z.object({
@@ -133,6 +133,7 @@ const MAX_DIAGRAM_PLAYERS = 30;
 
 export class AiChat implements ChatEngine {
   readonly mode = "ai" as const;
+  readonly usage = emptyUsage();
   constructor(
     private client: MessagesClient,
     private opts: AiOptions,
@@ -177,6 +178,7 @@ export class AiChat implements ChatEngine {
       let message: Anthropic.Beta.BetaMessage;
       try {
         message = await stream.finalMessage();
+        addUsage(this.usage, message.usage);
       } catch (err) {
         if (err instanceof Anthropic.APIError || signal?.aborted) throw err;
         // Unparseable tool input (eager streaming): re-issue the turn once.

@@ -35,6 +35,29 @@ export interface PlayGenerator {
   revise(req: ReviseRequest): Promise<ReviseResult>;
 }
 
+/** Running token totals, so operators (and the eval script) can see what AI calls cost. */
+export interface UsageTotals {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
+export const emptyUsage = (): UsageTotals => ({ calls: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
+
+export function addUsage(
+  totals: UsageTotals,
+  usage: { input_tokens?: number | null; output_tokens?: number | null; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null } | null | undefined,
+): void {
+  if (!usage) return;
+  totals.calls++;
+  totals.inputTokens += usage.input_tokens ?? 0;
+  totals.outputTokens += usage.output_tokens ?? 0;
+  totals.cacheReadTokens += usage.cache_read_input_tokens ?? 0;
+  totals.cacheWriteTokens += usage.cache_creation_input_tokens ?? 0;
+}
+
 /** Raised for model-side outcomes the coach should see as a friendly message. */
 export class GenerationError extends Error {
   constructor(message: string, readonly status: number) {
@@ -58,6 +81,7 @@ export type MessagesClient = Pick<Anthropic, "beta">;
 
 export class AiGenerator implements PlayGenerator {
   readonly mode = "ai" as const;
+  readonly usage = emptyUsage();
   constructor(private client: MessagesClient, private opts: AiOptions) {}
 
   private async call<T>(schema: Parameters<typeof betaZodOutputFormat>[0], userText: string): Promise<T> {
@@ -71,6 +95,7 @@ export class AiGenerator implements PlayGenerator {
       messages: [{ role: "user", content: userText }],
     });
     const message = await stream.finalMessage();
+    addUsage(this.usage, message.usage);
     if (message.stop_reason === "refusal") {
       throw new GenerationError("The AI declined this request. Try rephrasing it as a basketball coaching need.", 422);
     }

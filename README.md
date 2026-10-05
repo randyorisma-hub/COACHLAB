@@ -175,6 +175,22 @@ npm run typecheck # tsc --noEmit
 - **Coach chat** (`tests/chat.test.ts`): a scripted multi-step reply (text, library drills, a flawed design returned for repair, the fixed design), invalid tool input, the attribution clean-up, refusal handling, history conversion, the SSE parser and the demo endpoint.
 - **AI integration** (`tests/api.test.ts`) uses a fake SDK transport to check the request (model, adaptive thinking, structured output, fallbacks, the coach's prompt), the guardrail, fresh ids, refusal (422) and parse-failure (502) handling, plus rate limiting and security headers.
 
+## AI evaluation
+
+`npm run eval` runs 30 realistic coaching requests (`evals/cases.json`) through the real Claude integration and scores every result automatically:
+
+- **Generation (20 cases):** three distinct suggestions; each animates; ball possession and traveling; no automatic fixes needed; no program attribution; unique labels; roster size; court size; on topic.
+- **Chat (10 cases, including a follow-up conversation):** no errors; a real reply; the right number of drills shown; no attribution clean-up; the same activity checks.
+
+```bash
+npm run eval                  # plan + cost estimate only; nothing is sent
+npm run eval -- --yes         # real run (about $8-9 on Claude Opus 5.5; actual cost is measured and printed)
+npm run eval -- --yes --only chat --limit 3   # a cheap partial run
+npm run eval -- --demo        # free: score demo mode (checks the harness, sets a baseline)
+```
+
+Results are saved to `eval-results/` (git-ignored) with every suggestion and reply, so you can read what the AI produced.
+
 ## Roadmap
 
 - **Phase 1 (this release):** text → three drills or plays, animated and editable, with plain-language revisions, playbooks and share links; the drill library; the coach chat.

@@ -38,6 +38,8 @@ function stem(word: string): string {
 /** Lowercase word tokens with light stemming ("passing" → "pass", "cuts" → "cut"). */
 export function tokens(text: string): string[] {
   return (text.toLowerCase().match(/[a-z0-9-]+/g) ?? [])
+    // "box-out" and "out-of-bounds" match both as a whole and by their parts.
+    .flatMap((w) => (w.includes("-") ? [w, ...w.split("-")] : [w]))
     .map(stem)
     .filter((w) => w.length > 1);
 }
@@ -129,6 +131,7 @@ export function searchLibrary(filters: LibraryFilters = {}): ScoredEntry[] {
 export function pickForPrompt(prompt: string, opts: { count?: number; age?: number; players?: number; court?: "half" | "full" | "any" } = {}): LibraryEntry[] {
   const count = opts.count ?? 3;
   const age = opts.age ?? guessAge(prompt);
+  const wantsFull = /\bfull[- ]court\b/i.test(prompt);
   const q = tokens(prompt);
   // Hard limits: roster size and court. Age is a soft preference so very young
   // or very old groups still get the closest-fitting drills.
@@ -137,7 +140,7 @@ export function pickForPrompt(prompt: string, opts: { count?: number; age?: numb
   )
     .map((entry) => {
       const outside = age === undefined ? 0 : Math.max(entry.ages[0] - age, age - entry.ages[1], 0);
-      return { entry, score: scoreEntry(entry, q) - outside * 3 };
+      return { entry, score: scoreEntry(entry, q) - outside * 3 + (wantsFull && courtOf(entry) === "full" ? 2 : 0) };
     })
     .sort((a, b) => b.score - a.score || LIBRARY.indexOf(a.entry) - LIBRARY.indexOf(b.entry));
   const picked: LibraryEntry[] = [];

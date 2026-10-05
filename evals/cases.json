@@ -1,0 +1,36 @@
+{
+  "generate": [
+    { "id": "g01-passing-cutting", "prompt": "We have 12 eighth graders who need to improve passing and cutting.", "expect": { "players": 12, "age": 13, "keywords": ["pass", "cut"] } },
+    { "id": "g02-young-dribbling", "prompt": "Fun dribbling drills for 10 first and second graders who are brand new to basketball.", "expect": { "players": 10, "age": 7, "keywords": ["dribbl"] } },
+    { "id": "g03-press-break", "prompt": "My JV team keeps turning it over against a full-court man press. 10 players.", "expect": { "players": 10, "age": 15, "keywords": ["press"] } },
+    { "id": "g04-closeouts", "prompt": "Teach closeouts and help defense to 6th grade girls, 9 players, 15 minutes.", "expect": { "players": 9, "age": 11, "keywords": ["closeout", "help", "defen"] } },
+    { "id": "g05-rebounding", "prompt": "We get out-rebounded every game. Box-out drills for a varsity team of 14.", "expect": { "players": 14, "age": 16, "keywords": ["rebound", "box"] } },
+    { "id": "g06-blob", "prompt": "A simple baseline out-of-bounds play for 7th graders that gets a layup or a corner three.", "expect": { "age": 12, "keywords": ["inbound", "baseline"] } },
+    { "id": "g07-shooting-volume", "prompt": "High-rep shooting drill for 8 players on one basket with 3 balls.", "expect": { "players": 8, "keywords": ["shoot", "shot"] } },
+    { "id": "g08-transition", "prompt": "Transition offense: fill lanes and finish 3-on-2. 12 high schoolers, full court.", "expect": { "players": 12, "age": 16, "court": "full", "keywords": ["transition", "3-on-2", "lane"] } },
+    { "id": "g09-pick-and-roll", "prompt": "Teach a basic pick-and-roll read to U14 guards and bigs.", "expect": { "age": 13, "keywords": ["pick", "screen", "roll"] } },
+    { "id": "g10-zone-offense", "prompt": "How do we attack a 2-3 zone? Give me a set and a drill for 10 ninth graders.", "expect": { "players": 10, "age": 14, "keywords": ["zone"] } },
+    { "id": "g11-camp-big-group", "prompt": "Basketball camp station for 30 campers ages 9 to 11 with 2 baskets: layups and footwork.", "expect": { "players": 30, "age": 10, "keywords": ["layup", "footwork"] } },
+    { "id": "g12-warmup", "prompt": "A 10-minute dynamic warm-up with the ball for 15 players before games.", "expect": { "players": 15, "keywords": ["warm"] } },
+    { "id": "g13-attribution-bait", "prompt": "Give me the Golden State Warriors' motion offense for my 8th grade team.", "expect": { "age": 13, "keywords": ["motion"] } },
+    { "id": "g14-conditioning", "prompt": "Conditioning that uses the ball so players don't hate it. 12 players, full court.", "expect": { "players": 12, "court": "full", "keywords": ["condition"] } },
+    { "id": "g15-post-moves", "prompt": "Post moves for two tall 7th grade girls who are new to playing inside.", "expect": { "age": 12, "keywords": ["post"] } },
+    { "id": "g16-small-team", "prompt": "I only have 5 players at practice tonight. Competitive drills for all five.", "expect": { "players": 5, "keywords": [] } },
+    { "id": "g17-end-game", "prompt": "Down 2 with 8 seconds left, ball side out of bounds at half court. A play for high school varsity.", "expect": { "age": 16, "keywords": ["inbound", "sideline"] } },
+    { "id": "g18-defense-shell", "prompt": "Teach help-side positioning with a shell drill for 8 players, ages 12-13.", "expect": { "players": 8, "age": 12, "keywords": ["shell", "help"] } },
+    { "id": "g19-ball-screen-defense", "prompt": "How should my varsity defend ball screens? Drill with 10 players.", "expect": { "players": 10, "age": 16, "keywords": ["screen"] } },
+    { "id": "g20-very-young", "prompt": "Games for 6 and 7 year olds to learn to pass and catch. 12 kids.", "expect": { "players": 12, "age": 6, "keywords": ["pass", "catch"] } }
+  ],
+  "chat": [
+    { "id": "c01-camp-session", "messages": ["Plan a fun 45-minute camp session for 30 kids ages 8 to 10 in one gym."], "expect": { "minActivities": 1, "keywords": ["water"] } },
+    { "id": "c02-end-of-day-games", "messages": ["Give me 3 competitive basketball camp games for the last 15 minutes of the day."], "expect": { "minActivities": 0, "keywords": [] } },
+    { "id": "c03-coaching-question", "messages": ["How do I get my players to talk on defense? They're 11 and very quiet."], "expect": { "minActivities": 0, "keywords": ["talk"] } },
+    { "id": "c04-follow-up", "messages": ["We have 12 eighth graders who need to improve passing and cutting.", "Make the first one competitive and shorter, 8 minutes."], "expect": { "minActivities": 1, "keywords": [] } },
+    { "id": "c05-rainy-day", "messages": ["Rainy day: indoor games for 40 campers with only half a gym."], "expect": { "minActivities": 0, "keywords": [] } },
+    { "id": "c06-practice-plan", "messages": ["Write a 90-minute practice plan for my 7th grade boys. Focus: transition defense."], "expect": { "minActivities": 1, "keywords": ["transition"] } },
+    { "id": "c07-attribution-bait", "messages": ["What plays does Duke run? Give me one for my team."], "expect": { "minActivities": 0, "keywords": [] } },
+    { "id": "c08-new-drill", "messages": ["Design a brand-new drill that combines a closeout with a one-dribble pull-up for varsity guards."], "expect": { "minActivities": 1, "keywords": ["closeout"] } },
+    { "id": "c09-missing-info", "messages": ["I need a drill."], "expect": { "minActivities": 0, "keywords": [] } },
+    { "id": "c10-explain-library", "messages": ["Explain how to run the Mikan drill and show it to me."], "expect": { "minActivities": 1, "keywords": ["mikan"] } }
+  ]
+}

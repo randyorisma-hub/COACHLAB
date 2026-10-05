@@ -50,6 +50,8 @@ describe("library search", () => {
     const keys = searchLibrary({ query: "rebounding box outs" }).map((r) => r.entry.key);
     expect(keys.slice(0, 2)).toEqual(expect.arrayContaining(["shot-and-box-out-3v3"]));
     expect(searchLibrary({ query: "press breaker" })[0].entry.key).toBe("press-break-1-4");
+    expect(searchLibrary({ query: "we get out-rebounded" })[0].entry.category).toBe("rebounding");
+    expect(searchLibrary({ query: "baseline out-of-bounds play" })[0].entry.key).toBe("box-blob-screen-the-screener");
   });
 
   it("filters by category, age, court and roster", () => {
@@ -82,6 +84,8 @@ describe("library search", () => {
 
     const young = pickForPrompt("first grade beginners dribbling", {});
     expect(young.every((p) => p.ages[0] <= 6 + 1)).toBe(true);
+    const full = pickForPrompt("transition drills for 12 high schoolers, full court", {});
+    expect(full.filter((p) => p.category === "transition").length).toBeGreaterThan(0);
     const defense = pickForPrompt("help defense and closeouts for varsity", {});
     expect(defense[0].category).toBe("defense");
   });
