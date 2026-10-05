@@ -7,10 +7,12 @@ import { CreateView, initialCreateState, type CreateState } from "./components/C
 import { PlaybooksView, PlaybookView } from "./components/PlaybooksView";
 import { ShareView } from "./components/ShareView";
 import { DemoBanner } from "./components/Badges";
+import { ChatView, type ChatMessage } from "./components/ChatView";
 import { initialLibraryFilters, LibraryDetail, LibraryView, type LibraryFiltersState } from "./components/LibraryView";
 import { newId } from "../shared/validate";
 
 type Route =
+  | { name: "chat" }
   | { name: "create" }
   | { name: "edit" }
   | { name: "playbooks" }
@@ -22,6 +24,8 @@ type Route =
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
   switch (parts[0]) {
+    case "create":
+      return { name: "create" };
     case "edit":
       return { name: "edit" };
     case "playbooks":
@@ -33,7 +37,7 @@ function parseRoute(hash: string): Route {
     case "share":
       return parts[1] ? { name: "share", shareId: parts[1], savedId: parts[2] } : { name: "create" };
     default:
-      return { name: "create" };
+      return { name: "chat" };
   }
 }
 
@@ -47,6 +51,9 @@ export function App() {
   const [owned, setOwned] = useState<OwnedPlaybook[]>(loadOwned);
   const [create, setCreate] = useState<CreateState>(() => sessionGet<CreateState>("dpl.create") ?? initialCreateState);
   const [working, setWorking] = useState<WorkingCopy | null>(() => sessionGet<WorkingCopy>("dpl.working"));
+  const [chat, setChat] = useState<ChatMessage[]>(() =>
+    (sessionGet<ChatMessage[]>("dpl.chat") ?? []).map((m) => ({ ...m, pending: false, status: undefined })),
+  );
   const [libraryFilters, setLibraryFilters] = useState<LibraryFiltersState>(() => sessionGet<LibraryFiltersState>("dpl.library") ?? initialLibraryFilters);
 
   useEffect(() => {
@@ -65,6 +72,7 @@ export function App() {
   useEffect(() => sessionSet("dpl.create", create), [create]);
   useEffect(() => sessionSet("dpl.working", working), [working]);
   useEffect(() => sessionSet("dpl.library", libraryFilters), [libraryFilters]);
+  useEffect(() => sessionSet("dpl.chat", chat), [chat]);
   useEffect(() => saveOwned(owned), [owned]);
 
   const createPlaybook = useCallback(async (name: string) => {
@@ -87,8 +95,11 @@ export function App() {
         </a>
         {!isShare && (
           <nav>
-            <a href="#/" className={route.name === "create" ? "active" : ""}>
-              Create
+            <a href="#/" className={route.name === "chat" ? "active" : ""}>
+              Chat
+            </a>
+            <a href="#/create" className={route.name === "create" ? "active" : ""}>
+              Generate
             </a>
             <a href="#/library" className={route.name.startsWith("library") ? "active" : ""}>
               Library
@@ -106,6 +117,17 @@ export function App() {
       {!isShare && mode === "demo" && <DemoBanner />}
 
       <main>
+        {route.name === "chat" && (
+          <ChatView
+            messages={chat}
+            setMessages={setChat}
+            mode={mode}
+            onOpen={(env) => {
+              setWorking({ activity: env.activity, origin: env.origin });
+              go("#/edit");
+            }}
+          />
+        )}
         {route.name === "create" && (
           <CreateView
             state={create}
@@ -125,7 +147,7 @@ export function App() {
             <ActivityEditor working={working} mode={mode} owned={owned} onChange={setWorking} onCreatePlaybook={createPlaybook} />
           ) : (
             <p className="empty">
-              Nothing open yet. <a href="#/">Generate suggestions</a> or open an activity from a playbook.
+              Nothing open yet. <a href="#/">Ask the coach chat</a>, <a href="#/create">generate suggestions</a> or open an activity from a playbook.
             </p>
           ))}
         {route.name === "playbooks" && (

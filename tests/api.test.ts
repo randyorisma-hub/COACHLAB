@@ -28,7 +28,7 @@ describe("demo mode", () => {
 
   it("reports demo mode in /api/health", async () => {
     const res = await request(app()).get("/api/health");
-    expect(res.body).toEqual({ ok: true, mode: "demo" });
+    expect(res.body).toEqual({ ok: true, mode: "demo", chat: "demo" });
   });
 
   it("returns three labeled demo suggestions sized to the team", async () => {

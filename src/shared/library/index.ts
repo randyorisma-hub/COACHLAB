@@ -52,6 +52,10 @@ export function guessAge(text: string): number | undefined {
   if (grade) return (Number(grade[1]) || words[grade[1]]) + 5;
   const u = t.match(/\bu-?(\d{1,2})\b/) ?? t.match(/\b(\d{1,2})u\b/);
   if (u) return Number(u[1]) - 1;
+  const range = t.match(/\bages?\s*(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})\b/);
+  if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
+  const single = t.match(/\bage(?:s|d)?\s*(\d{1,2})\b/);
+  if (single) return Number(single[1]);
   const years = t.match(/\b(\d{1,2})[- ]?(?:year|yr)s?[- ]?olds?\b/);
   if (years) return Number(years[1]);
   if (/\b(varsity|high school|jv)\b/.test(t)) return 16;

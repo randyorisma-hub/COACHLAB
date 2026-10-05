@@ -2,6 +2,7 @@
 
 A mobile-friendly basketball coaching platform. A coach describes a drill, play or team need, for example *"We have 12 eighth graders who need to improve passing and cutting."* Driven Play Lab then returns **three suggestions**. Each one comes with setup, instructions, rotations, coaching cues, variations and an **animated, editable court diagram**.
 
+- **Coach chat** (home screen): talk or type to a coaching assistant that answers like a staff expert, asks follow-up questions, and shows library drills or newly designed drills on animated courts right in the conversation.
 - **Playback:** play, pause, 0.25×–2× speed, step forward and back, scrub, loop.
 - **Editing:** drag players to set starting spots. Drag a player during a step to create a cut, or a dribble for the ball handler. Drag the ◆ handle to change where a path ends, or curve the path. You can also edit action type, player, receiver, start time and duration, and add, reorder or delete steps and players. Undo and redo are available.
 - **Plain-language changes:** for example "Add a passive defender" or "Have 4 screen for 2". The request goes to Claude through the server.
@@ -34,6 +35,8 @@ npm start                   # http://localhost:8787
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Enables real AI. Without it the app runs in **demo mode**. |
 | `ANTHROPIC_MODEL` | `claude-opus-5-5` | Claude model used for generation and revisions. |
+| `CHAT_EFFORT` | `AI_EFFORT` | Effort for the coach chat. |
+| `GUIDELINES_FILE` | `content/driven-guidelines.md` | Driven coaching guidelines given to the chat assistant. |
 | `AI_EFFORT` | `medium` | `low` / `medium` / `high` / `xhigh` / `max`: trades thoroughness against latency and cost. |
 | `AI_FALLBACKS` | `on` | Server-side refusal fallback (Claude API). Set `off` if you point the SDK at a platform that doesn't support it. |
 | `AI_REQUESTS_PER_MINUTE` | `10` | Per-IP limit on `/api/generate` and `/api/revise`. |
@@ -99,6 +102,23 @@ An activity is data, not a video:
 
 Refusals, truncation and unparseable output become friendly errors; provider error details are never forwarded to the browser. Every result then goes through `prepareActivity()`, which clamps coordinates to the court, de-duplicates IDs, drops actions that reference missing players, serializes overlapping moves and passes, applies the attribution guardrail and reports ball-possession issues. When an activity has possession issues, the editor shows them and offers a **Fix ball issues** button, which sends them back to Claude as a revision.
 
+### Coach chat
+
+`POST /api/chat` takes the conversation (text only; the browser keeps it) and streams the reply back as server-sent events: text as it's written, status lines, and activities.
+
+- **Claude with two tools** (`src/server/chat.ts`):
+  - `show_library_activities` shows library drills by key, sized to the coach's roster.
+  - `design_activity` designs a new activity.
+- **What Claude sees:** the system prompt holds the Driven guidelines, the activity design rules and a one-line catalog of every library drill. It's marked for prompt caching.
+- **Checks on new designs:** every designed activity goes through the same normalization, attribution guardrail and possession/traveling checks as the rest of the app. A design with possession or traveling problems is sent back to Claude once to fix before the coach sees it.
+- **Attribution:** if the finished reply credits a pro, college or national-team program, that sentence is removed and the coach sees a note.
+- **Voice:** the mic button uses the browser's built-in speech recognition (Chrome, Edge, Safari). Other browsers simply don't show it.
+- **Demo mode:** without a key, the chat says it's in demo mode and answers with matching library drills.
+
+### Driven guidelines (proprietary)
+
+`content/driven-guidelines.md` is where Driven's directors write the program's philosophy, camp rules and terminology. The server reads it at startup (HTML comments are stripped) and gives it to the chat assistant with every conversation, so answers follow the Driven way. It's never served to browsers as a file. Edit it and restart the server.
+
 ### Drill library
 
 `src/shared/library/` holds 36 original activities in 12 categories, each with a suggested age range, minimum and default roster size, search tags and "further reading" links. The write-ups and diagrams are our own, based on common coaching practice. Public coaching pages are linked for reference, and nothing is copied from them.
@@ -152,11 +172,16 @@ npm run typecheck # tsc --noEmit
   - activities are normalized before storage
 - **Library** (`tests/library.test.ts`): every drill at its minimum, 8, 12, 20 and 30 players; unique keys and ids; every category covered; https links only; no program names; search, filters, age parsing and prompt matching; the traveling check.
 - **Editing** (`tests/edit.test.ts`), **validation and attribution** (`tests/validate.test.ts`), **schemas sent to Claude** (`tests/schema.test.ts`).
+- **Coach chat** (`tests/chat.test.ts`): a scripted multi-step reply (text, library drills, a flawed design returned for repair, the fixed design), invalid tool input, the attribution clean-up, refusal handling, history conversion, the SSE parser and the demo endpoint.
 - **AI integration** (`tests/api.test.ts`) uses a fake SDK transport to check the request (model, adaptive thinking, structured output, fallbacks, the coach's prompt), the guardrail, fresh ids, refusal (422) and parse-failure (502) handling, plus rate limiting and security headers.
 
 ## Roadmap
 
-- **Phase 1 (this release):** text → three drills or plays, animated and editable, with plain-language revisions, playbooks and share links.
+- **Phase 1 (this release):** text → three drills or plays, animated and editable, with plain-language revisions, playbooks and share links; the drill library; the coach chat.
+- **Next:**
+  - Individual coach logins (email magic links) with admin, staff and read-only roles, so the app can be handed out at Driven orientations and access removed per person.
+  - Camp games: basketball camp games and general camp games (relays, tag, team-builders, rainy-day).
+  - Practice and camp-day planners.
 - **Phase 2:** import screenshots, whiteboard photos and PDF playbook pages. The UI tab is present and marked *Phase 2*; Claude's vision and PDF input would produce the same Activity schema.
 - **Phase 3:** reconstruct movement from game footage into the same Activity schema. The UI tab is present and marked *Phase 3*.
-- Later: accounts and team roles, a database store, exporting diagrams (PNG/PDF), and source-verified attribution for plays with a documented origin.
+- Later: a database store, exporting diagrams (PNG/PDF), and source-verified attribution for plays with a documented origin.

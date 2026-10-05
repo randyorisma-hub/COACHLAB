@@ -66,6 +66,9 @@ describe("library search", () => {
     expect(guessAge("my 3rd grade girls")).toBe(8);
     expect(guessAge("U12 team")).toBe(11);
     expect(guessAge("10 year olds")).toBe(10);
+    expect(guessAge("30 kids ages 8–10 in one gym")).toBe(9);
+    expect(guessAge("campers ages 11 to 13")).toBe(12);
+    expect(guessAge("players aged 15")).toBe(15);
     expect(guessAge("varsity")).toBe(16);
     expect(guessAge("just a team")).toBeUndefined();
   });

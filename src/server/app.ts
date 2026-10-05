@@ -12,11 +12,14 @@ import {
 import { prepareActivity } from "../shared/pipeline";
 import { GenerationError, type PlayGenerator } from "./generators";
 import { ForbiddenError, LimitError, NotFoundError, PlaybookStore } from "./store";
+import { ChatRequestSchema, DemoChat, type ChatEngine, type ChatEvent } from "./chat";
 import { rateLimit } from "./rateLimit";
 
 export interface AppDeps {
   generator: PlayGenerator;
   store: PlaybookStore;
+  /** Coach chat engine; defaults to the demo chat. */
+  chat?: ChatEngine;
   /** Directory with the built client (served in production). */
   clientDir?: string;
   aiRequestsPerMinute?: number;
@@ -24,7 +27,7 @@ export interface AppDeps {
 
 const editToken = (req: Request) => req.header("x-edit-token") ?? undefined;
 
-export function createApp({ generator, store, clientDir, aiRequestsPerMinute = 10 }: AppDeps) {
+export function createApp({ generator, store, chat = new DemoChat(), clientDir, aiRequestsPerMinute = 10 }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", "loopback");
@@ -44,7 +47,7 @@ export function createApp({ generator, store, clientDir, aiRequestsPerMinute = 1
   const aiLimiter = rateLimit({ windowMs: 60_000, max: aiRequestsPerMinute });
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, mode: generator.mode });
+    res.json({ ok: true, mode: generator.mode, chat: chat.mode });
   });
 
   app.post("/api/generate", aiLimiter, async (req, res, next) => {
@@ -62,6 +65,38 @@ export function createApp({ generator, store, clientDir, aiRequestsPerMinute = 1
       res.json(await generator.revise(body));
     } catch (err) {
       next(err);
+    }
+  });
+
+  // Server-sent events: text deltas, activities and status as the reply is written.
+  app.post("/api/chat", aiLimiter, async (req, res, next) => {
+    let body;
+    try {
+      body = ChatRequestSchema.parse(req.body);
+    } catch (err) {
+      next(err);
+      return;
+    }
+    res.status(200);
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+    const abort = new AbortController();
+    res.on("close", () => abort.abort());
+    const emit = (e: ChatEvent) => {
+      if (!res.writableEnded) res.write(`data: ${JSON.stringify(e)}\n\n`);
+    };
+    try {
+      await chat.chat(body, emit, abort.signal);
+    } catch (err) {
+      if (!abort.signal.aborted) {
+        const { status, message } = toHttpError(err);
+        if (status >= 500) console.error(err);
+        emit({ type: "error", message });
+      }
+    } finally {
+      res.end();
     }
   });
 
