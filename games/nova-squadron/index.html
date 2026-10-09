@@ -112,10 +112,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.domElement.tabIndex = 0;
 stage.appendChild(renderer.domElement);
 
-const FOG = 0x2a1d4a;
+const FOG = 0x05040f;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(FOG);
-scene.fog = new THREE.Fog(FOG, 90, 360);
+scene.fog = new THREE.Fog(FOG, 140, 400);
 const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1200);
 camera.position.set(0, 7, 11);
 
@@ -128,51 +128,71 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-scene.add(new THREE.HemisphereLight(0xbcc8ff, 0x3a2a20, 0.85));
-const sun = new THREE.DirectionalLight(0xffd2a0, 1.1);
-sun.position.set(-40, 60, 30);
+scene.add(new THREE.HemisphereLight(0xbcc8ff, 0x1a1030, 0.7));
+const sun = new THREE.DirectionalLight(0xfff0dd, 1.2);
+sun.position.set(40, 50, 30);
 scene.add(sun);
 
-/* sky backdrop: dusk gradient, sun, mountains */
+/* space backdrop: nebula clouds, distant stars, ringed planet */
 (function backdrop() {
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+  const W = 2048, H = 1024;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, 0, 512);
-  g.addColorStop(0, '#120c33'); g.addColorStop(.45, '#4a2a6a'); g.addColorStop(.72, '#c0566e'); g.addColorStop(.86, '#ff9a5a'); g.addColorStop(1, '#2a1d4a');
-  x.fillStyle = g; x.fillRect(0, 0, 1024, 512);
-  for (let i = 0; i < 160; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * .7})`; x.fillRect(Math.random() * 1024, Math.random() * 200, 1.5, 1.5); }
-  const sg = x.createRadialGradient(640, 380, 10, 640, 380, 120);
-  sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(.35, 'rgba(255,190,110,.9)'); sg.addColorStop(1, 'rgba(255,150,90,0)');
-  x.fillStyle = sg; x.fillRect(480, 240, 320, 280);
-  const ridge = (base, amp, col, seed) => {
-    x.fillStyle = col; x.beginPath(); x.moveTo(0, 512);
-    for (let i = 0; i <= 1024; i += 16) x.lineTo(i, base - Math.abs(Math.sin(i * .011 + seed) * amp + Math.sin(i * .037 + seed * 2) * amp * .35));
-    x.lineTo(1024, 512); x.fill();
+  x.fillStyle = '#05040f'; x.fillRect(0, 0, W, H);
+  x.globalCompositeOperation = 'lighter';
+  const blob = (cx, cy, r, col) => {
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2);
   };
-  ridge(430, 60, '#5a3466', 1); ridge(462, 44, '#3a2452', 4);
+  for (let i = 0; i < 14; i++) blob(rand(200, 1300), rand(150, 800), rand(140, 380), pick(['rgba(120,50,200,.22)', 'rgba(40,140,210,.18)', 'rgba(220,60,150,.16)', 'rgba(60,200,190,.12)']));
+  for (let i = 0; i < 2200; i++) {
+    const a = Math.random(); x.fillStyle = `rgba(${200 + rand(0, 55) | 0},${210 + rand(0, 45) | 0},255,${a * a})`;
+    const sz = Math.random() < .03 ? 2.4 : 1.2; x.fillRect(rand(0, W), rand(0, H), sz, sz);
+  }
+  for (let i = 0; i < 26; i++) blob(rand(0, W), rand(0, H), rand(6, 14), 'rgba(200,220,255,.5)');
+  x.globalCompositeOperation = 'source-over';
+  // ringed planet
+  const px = 1560, py = 690, pr = 230;
+  const ring = (front) => {
+    x.save(); x.translate(px, py); x.rotate(-.32); x.scale(1, .22);
+    x.lineWidth = 34; x.strokeStyle = 'rgba(230,200,160,.55)';
+    x.beginPath(); x.arc(0, 0, pr * 1.75, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); x.stroke();
+    x.lineWidth = 12; x.strokeStyle = 'rgba(255,230,190,.35)';
+    x.beginPath(); x.arc(0, 0, pr * 2.05, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); x.stroke();
+    x.restore();
+  };
+  ring(false);
+  const pg = x.createRadialGradient(px - pr * .45, py - pr * .45, pr * .1, px, py, pr);
+  pg.addColorStop(0, '#f2a86a'); pg.addColorStop(.55, '#a0466a'); pg.addColorStop(1, '#1c0f2e');
+  x.fillStyle = pg; x.beginPath(); x.arc(px, py, pr, 0, Math.PI * 2); x.fill();
+  x.save(); x.beginPath(); x.arc(px, py, pr, 0, Math.PI * 2); x.clip();
+  for (let i = 0; i < 7; i++) { x.fillStyle = `rgba(255,220,180,${rand(.04, .12)})`; x.fillRect(px - pr, py - pr + i * 66 + rand(0, 20), pr * 2, rand(10, 28)); }
+  x.restore();
+  ring(true);
+  // small moon
+  const mg = x.createRadialGradient(420, 260, 4, 430, 270, 46);
+  mg.addColorStop(0, '#d8dcef'); mg.addColorStop(1, '#2a2a44');
+  x.fillStyle = mg; x.beginPath(); x.arc(430, 270, 46, 0, Math.PI * 2); x.fill();
   const tex = new THREE.CanvasTexture(c);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(1700, 560), new THREE.MeshBasicMaterial({ map: tex, fog: false }));
-  m.position.set(0, 150, -430);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2200, 1100), new THREE.MeshBasicMaterial({ map: tex, fog: false }));
+  m.position.set(0, 60, -440);
   scene.add(m);
 })();
 
-/* scrolling ground */
-const groundTex = (() => {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const x = c.getContext('2d');
-  x.fillStyle = '#1d4744'; x.fillRect(0, 0, 128, 128);
-  x.fillStyle = '#21504c'; x.fillRect(0, 0, 64, 64); x.fillRect(64, 64, 64, 64);
-  x.strokeStyle = 'rgba(90,230,200,.55)'; x.lineWidth = 2; x.strokeRect(1, 1, 126, 126);
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(45, 22);
-  t.anisotropy = 4;
-  return t;
-})();
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 440), new THREE.MeshStandardMaterial({ map: groundTex, roughness: 1 }));
-ground.rotation.x = -Math.PI / 2;
-ground.position.z = -200;
-scene.add(ground);
+/* stars streaking past for a sense of speed */
+const STARS = 1400;
+const starPos = new Float32Array(STARS * 3);
+function placeStar(i, z) {
+  let x, y;
+  do { x = rand(-220, 220); y = rand(-140, 160); } while (Math.abs(x) < 6 && y > -2 && y < 16);
+  starPos[i * 3] = x; starPos[i * 3 + 1] = y; starPos[i * 3 + 2] = z;
+}
+for (let i = 0; i < STARS; i++) placeStar(i, rand(-420, 20));
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xdfe8ff, size: .9, sizeAttenuation: true, fog: false, transparent: true, opacity: .9 }));
+scene.add(starField);
 
 /* ---------- materials & shared geometry ---------- */
 const M = {
@@ -185,17 +205,16 @@ const M = {
   laser: new THREE.MeshBasicMaterial({ color: 0x7dff6a }),
   shot: new THREE.MeshBasicMaterial({ color: 0xff6a3c }),
   shotDeflect: new THREE.MeshBasicMaterial({ color: 0x66ccff }),
-  tower: new THREE.MeshStandardMaterial({ color: 0x6b5a9a, flatShading: true }),
-  towerTop: new THREE.MeshBasicMaterial({ color: 0xff4d8a }),
-  arch: new THREE.MeshStandardMaterial({ color: 0xd8c9a0, flatShading: true }),
+  rock: new THREE.MeshStandardMaterial({ color: 0x9a8a8c, flatShading: true, roughness: 1 }),
+  rockDark: new THREE.MeshStandardMaterial({ color: 0x2c2838, flatShading: true, roughness: 1 }),
+  bgRock: new THREE.MeshStandardMaterial({ color: 0x3a3448, flatShading: true, roughness: 1 }),
+  rockHot: new THREE.MeshStandardMaterial({ color: 0x6a4a52, emissive: 0x3a0e12, flatShading: true, roughness: 1 }),
+  arch: new THREE.MeshStandardMaterial({ color: 0x8a94b8, flatShading: true, metalness: .6, roughness: .4 }),
+  gateGlow: new THREE.MeshBasicMaterial({ color: 0x5ff2ff }),
   silver: new THREE.MeshStandardMaterial({ color: 0xdfe8f5, emissive: 0x556070, metalness: .9, roughness: .2 }),
   gold: new THREE.MeshStandardMaterial({ color: 0xffd04a, emissive: 0x6a4a00, metalness: .9, roughness: .2 }),
   core: new THREE.MeshStandardMaterial({ color: 0xff2a6d, emissive: 0xaa1040, flatShading: true }),
   bossShield: new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: .22 }),
-  sceneryA: new THREE.MeshStandardMaterial({ color: 0x5b4b8a, flatShading: true }),
-  sceneryB: new THREE.MeshStandardMaterial({ color: 0x3d5f8c, flatShading: true }),
-  sceneryC: new THREE.MeshStandardMaterial({ color: 0x7a5a7a, flatShading: true }),
-  tree: new THREE.MeshStandardMaterial({ color: 0x2f7a55, flatShading: true }),
 };
 const G = {
   box: new THREE.BoxGeometry(1, 1, 1),
@@ -206,6 +225,17 @@ const G = {
   ring: new THREE.TorusGeometry(1.9, .28, 8, 28),
   flash: new THREE.SphereGeometry(1, 12, 8),
 };
+function makeRockGeo(detail) {
+  const g = new THREE.IcosahedronGeometry(1, detail), pos = g.attributes.position, bump = {};
+  for (let i = 0; i < pos.count; i++) {
+    const key = [pos.getX(i), pos.getY(i), pos.getZ(i)].map(v => v.toFixed(3)).join();
+    const k = bump[key] || (bump[key] = rand(.72, 1.25));
+    pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * .85, pos.getZ(i) * k);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+const rockGeos = [makeRockGeo(0), makeRockGeo(1), makeRockGeo(1)];
 const partMats = [0xffe066, 0xff8a3d, 0xff4d4d, 0xffffff].map(c => new THREE.MeshBasicMaterial({ color: c }));
 const sparkMats = [0x9dfcff, 0xffffff].map(c => new THREE.MeshBasicMaterial({ color: c }));
 
@@ -379,21 +409,18 @@ function makeReticle(size) {
 }
 const ret1 = makeReticle(1.6), ret2 = makeReticle(2.4);
 
-/* scenery: city blocks and trees along the flanks */
+/* scenery: an asteroid belt drifting around the flight lane */
 function placeScenery(o, z) {
-  const side = Math.random() < .5 ? -1 : 1;
-  const x = side * rand(26, 90);
-  if (o.userData.tree) {
-    const h = rand(3, 7); o.scale.set(h * .45, h, h * .45); o.position.set(x, h / 2, z);
-  } else {
-    const w = rand(4, 10), h = rand(4, 28), d = rand(4, 10);
-    o.scale.set(w, h, d); o.position.set(x, h / 2, z);
-  }
+  let x, y;
+  do { x = rand(-160, 160); y = rand(-90, 100); } while (Math.abs(x) < 45 && y > -30 && y < 45);
+  const sc = rand(2, 9);
+  o.scale.set(sc * rand(.8, 1.3), sc, sc * rand(.8, 1.3));
+  o.position.set(x, y, z);
+  o.userData.spin = new THREE.Vector3(rand(-.6, .6), rand(-.6, .6), rand(-.6, .6));
 }
-for (let i = 0; i < 70; i++) {
-  const tree = i % 3 === 0;
-  const o = new THREE.Mesh(tree ? G.cone : G.box, tree ? M.tree : pick([M.sceneryA, M.sceneryB, M.sceneryC]));
-  o.userData.tree = tree;
+for (let i = 0; i < 45; i++) {
+  const o = new THREE.Mesh(pick(rockGeos), pick([M.bgRock, M.rockDark]));
+  o.rotation.set(rand(0, 6), rand(0, 6), rand(0, 6));
   placeScenery(o, rand(-400, 20));
   scene.add(o); scenery.push(o);
 }
@@ -419,24 +446,28 @@ function waveDive(n = 3) {
   const cx = clamp(P.x + rand(-6, 6), -14, 14);
   for (let i = 0; i < n; i++) spawnFighter({ mode: 'dive', x: cx + (i - (n - 1) / 2) * 5, y: 34 + i * 4, z: -200 - i * 14, ty: rand(3, 10) });
 }
-function spawnTowers(n = 4) {
-  const xs = [];
+function spawnRocks(n = 4) {
+  const spots = [];
   for (let i = 0; i < n; i++) {
-    let x; let tries = 0;
-    do { x = rand(-18, 18); tries++; } while (xs.some(v => Math.abs(v - x) < 6) && tries < 20);
-    xs.push(x);
-    const w = rand(2.2, 3.6), h = rand(6, 17), z = -340 - rand(0, 40);
-    const g = new THREE.Group();
-    const shaft = new THREE.Mesh(G.box, M.tower); shaft.scale.set(w, h, w); shaft.position.y = h / 2; g.add(shaft);
-    const top = new THREE.Mesh(G.box, M.towerTop); top.scale.set(w * .6, .6, w * .6); top.position.y = h + .3; g.add(top);
-    g.position.set(x, 0, z); scene.add(g);
-    obstacles.push({ kind: 'tower', m: g, w, h, d: w, hp: 5, pts: 50 });
+    let x, y, tries = 0;
+    do { x = rand(-17, 17); y = rand(2, 13); tries++; } while (spots.some(v => Math.hypot(v[0] - x, v[1] - y) < 7) && tries < 20);
+    spots.push([x, y]);
+    const r = rand(1.8, 3.4);
+    const m = new THREE.Mesh(pick(rockGeos), Math.random() < .3 ? M.rockHot : M.rock);
+    m.scale.setScalar(r);
+    m.rotation.set(rand(0, 6), rand(0, 6), rand(0, 6));
+    m.position.set(x, y, -340 - rand(0, 50));
+    scene.add(m);
+    obstacles.push({ kind: 'rock', m, r, hp: Math.round(r * 1.5), pts: 50, spin: new THREE.Vector3(rand(-1.5, 1.5), rand(-1.5, 1.5), 0), drift: rand(-1.5, 1.5) });
   }
 }
 function spawnArch(x = rand(-10, 10)) {
   const hw = 5.5, H = 10, g = new THREE.Group();
   for (const s of [-1, 1]) { const p = new THREE.Mesh(G.box, M.arch); p.scale.set(1.6, H, 1.6); p.position.set(s * hw, H / 2, 0); g.add(p); }
   const beam = new THREE.Mesh(G.box, M.arch); beam.scale.set(hw * 2 + 1.6, 1.4, 1.6); beam.position.y = H + .7; g.add(beam);
+  const base = new THREE.Mesh(G.box, M.arch); base.scale.set(hw * 2 + 1.6, 1.4, 1.6); base.position.y = -.7; g.add(base);
+  for (const y of [.15, H - .15]) { const t = new THREE.Mesh(G.box, M.gateGlow); t.scale.set(hw * 2 - 1.4, .25, .3); t.position.set(0, y, .7); g.add(t); }
+  for (const sx of [-1, 1]) { const t = new THREE.Mesh(G.box, M.gateGlow); t.scale.set(.25, H - .3, .3); t.position.set(sx * (hw - .95), H / 2, .7); g.add(t); }
   g.position.set(x, 0, -360); scene.add(g);
   obstacles.push({ kind: 'arch', m: g, hw, H, passed: false });
 }
@@ -476,14 +507,14 @@ const SCRIPT = [
   [8, () => waveSwoop(1)],
   [11, () => waveSwoop(-1)],
   [13, () => spawnRing(false, 0, 6)],
-  [15, () => spawnTowers(4)],
-  [16, () => radio('PELL', 'Towers ahead. Weave through or blast them down.')],
+  [15, () => spawnRocks(5)],
+  [16, () => radio('PELL', 'Asteroids ahead. Weave through or blast them apart.')],
   [18, () => waveV(5)],
   [20, () => radio('BRAM', 'They\'re shooting back! Double-tap ← or → to barrel roll. It deflects their fire.')],
   [23, () => spawnArch(0)],
   [25, () => { waveSwoop(1, 3); waveSwoop(-1, 3); }],
   [28, () => spawnRing(true, 0, 8)],
-  [30, () => radio('PELL', 'Thread those arches for bonus points.')],
+  [30, () => radio('PELL', 'Fly through those jump gates for bonus points.')],
   [31, () => spawnArch()],
   [34, () => waveDive(3)],
   [52, () => radio('BRAM', 'Silver rings patch your shield. Gold ones do more.')],
@@ -500,7 +531,7 @@ function director(dt) {
       if (r < .3) waveV(rand(3, 6) | 0);
       else if (r < .5) waveSwoop(pick([-1, 1]), 4);
       else if (r < .65) waveDive(3);
-      else if (r < .85) spawnTowers((rand(3, 6)) | 0);
+      else if (r < .85) spawnRocks((rand(4, 8)) | 0);
       else spawnArch();
       game.dirT = rand(2.2, 3.6) - (game.t - 36) / 60 * .8;
     }
@@ -621,7 +652,7 @@ function endScreen(won) {
 }
 function titleScreen() {
   showOverlay(`
-    <div class="kicker">Sector 7 · Dusk patrol</div>
+    <div class="kicker">Sector 7 · Asteroid belt</div>
     <h1>Nova Squadron</h1>
     <div class="keys">
       <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></span><span>Steer the fighter</span>
@@ -749,21 +780,22 @@ function updateObstacles(dt) {
     const p = o.m.position;
     p.z += S * dt;
     if (p.z > 30) { o.dead = true; continue; }
-    if (o.kind === 'tower') {
+    if (o.kind === 'rock') {
+      o.m.rotation.x += o.spin.x * dt; o.m.rotation.y += o.spin.y * dt;
+      p.x += o.drift * dt;
       for (const b of bolts) {
-        if (b.dead) continue;
-        const bp = b.m.position;
-        if (Math.abs(bp.x - p.x) < o.w / 2 + .3 && bp.y < o.h + .6 && Math.min(bp.z, b.pz) - 1.4 < p.z + o.d / 2 && Math.max(bp.z, b.pz) + 1.4 > p.z - o.d / 2) {
-          landed(b); o.hp--; spark(bp);
-          if (o.hp <= 0) {
-            o.dead = true; game.hits++;
-            for (let y = 2; y < o.h; y += 4) explode(_a.set(p.x, y, p.z), 8, 1);
-            addScore(o.pts, _a.set(p.x, o.h, p.z)); sfx.boom(false);
-            break;
-          }
+        if (b.dead || !boltHit(b, p, o.r + .3)) continue;
+        landed(b); o.hp--; spark(b.m.position, partMats, 3);
+        if (o.hp <= 0) {
+          o.dead = true; game.hits++;
+          explode(p, 12, o.r * .6);
+          for (let i = 0; i < 6; i++) spark(p, [M.rock, M.rockDark], 2);
+          addScore(o.pts, p); sfx.boom(false);
+          break;
         }
       }
-      if (!o.dead && game.state === 'play' && Math.abs(P.x - p.x) < o.w / 2 + 1.3 && P.y < o.h + .8 && Math.abs(p.z) < o.d / 2 + 1.2) {
+      if (!o.dead && game.state === 'play' && Math.abs(p.z) < o.r + 1 && Math.hypot(P.x - p.x, P.y - p.y) < o.r + 1) {
+        o.dead = true; explode(p, 10, o.r * .5); sfx.boom(false);
         hurt(25); P.vx += (P.x > p.x ? 1 : -1) * 30;
       }
     } else if (o.kind === 'arch') {
@@ -775,7 +807,7 @@ function updateObstacles(dt) {
       if (!o.passed && p.z > 0) {
         o.passed = true;
         if (game.state === 'play' && Math.abs(P.x - p.x) < o.hw - .8 && P.y < o.H - .6) {
-          addScore(200, ship.position, 'ARCH +200'); sfx.ping();
+          addScore(200, ship.position, 'GATE +200'); sfx.ping();
         }
       }
     }
@@ -813,9 +845,14 @@ function updateParts(dt) {
 function updateScenery(dt) {
   for (const o of scenery) {
     o.position.z += S * dt;
+    o.rotation.x += o.userData.spin.x * dt; o.rotation.y += o.userData.spin.y * dt;
     if (o.position.z > 25) placeScenery(o, o.position.z - 425);
   }
-  groundTex.offset.y += S * dt / 20;
+  for (let i = 0; i < STARS; i++) {
+    const z = starPos[i * 3 + 2] + S * 2.2 * dt;
+    if (z > 20) placeStar(i, z - 440); else starPos[i * 3 + 2] = z;
+  }
+  starGeo.attributes.position.needsUpdate = true;
 }
 const _w = new THREE.Vector3();
 function updateBoss(dt) {
